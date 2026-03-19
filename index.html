@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sovereign Health Medical Center</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ─── FONTS via inline style injection ───
+    const fontStyle = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Lato:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Lato', sans-serif; background: #FDFBF7; color: #1C2B3A; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: #FDFBF7; }
+  ::-webkit-scrollbar-thumb { background: #1C2B3A; border-radius: 3px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+  @keyframes slideRight {
+    from { transform: scaleX(0); } to { transform: scaleX(1); }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes borderGrow {
+    from { width: 0; } to { width: 60px; }
+  }
+  
+  .page-enter { animation: fadeIn 0.35s ease; }
+  
+  .fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+  input, select, textarea {
+    font-family: 'Lato', sans-serif;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  a { text-decoration: none; }
+  button { cursor: pointer; font-family: 'Lato', sans-serif; }
+  
+  @media (max-width: 768px) {
+    .hide-mobile { display: none !important; }
+    .show-mobile { display: flex !important; }
+  }
+  @media (min-width: 769px) {
+    .show-mobile { display: none !important; }
+  }
+`;
+
+    // ─── THEME ───
+    const T = {
+      navy: "#1C2B3A",
+      navyLight: "#243447",
+      cream: "#FDFBF7",
+      ivory: "#F5F0E8",
+      gold: "#B8860B",
+      goldLight: "#D4A843",
+      goldPale: "#FDF3DC",
+      red: "#C0392B",
+      teal: "#2E7D82",
+      tealLight: "#3E9BA1",
+      tealPale: "#E8F4F5",
+      text: "#1C2B3A",
+      textMid: "#4A5568",
+      textLight: "#718096",
+      border: "#E8E0D0",
+      white: "#FFFFFF",
+    };
+
+    // ─── SHARED COMPONENTS ───
+
+    const Logo = ({ white = false }) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 10,
+          background: white ? "rgba(255,255,255,0.15)" : T.navy,
+          border: `2px solid ${white ? "rgba(255,255,255,0.4)" : T.goldLight}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 20, color: white ? "#fff" : T.goldLight,
+          flexShrink: 0,
+        }}>✚</div>
+        <div>
+          <div style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: "1.3rem", fontWeight: 700,
+            color: white ? "#fff" : T.navy,
+            lineHeight: 1,
+            letterSpacing: "-0.01em",
+          }}>Sovereign<span style={{ color: white ? T.goldLight : T.gold }}> Health</span></div>
+          <div style={{ fontSize: "0.62rem", letterSpacing: "0.14em", color: white ? "rgba(255,255,255,0.6)" : T.textLight, textTransform: "uppercase", marginTop: 2 }}>Medical Center</div>
+        </div>
+      </div>
+    );
+
+    const Btn = ({ children, variant = "primary", onClick, style = {}, small = false }) => {
+      const [hov, setHov] = useState(false);
+      const base = {
+        display: "inline-flex", alignItems: "center", gap: 8,
+        padding: small ? "9px 20px" : "13px 28px",
+        borderRadius: 6, fontWeight: 700, fontSize: small ? "0.78rem" : "0.875rem",
+        letterSpacing: "0.05em", textTransform: "uppercase",
+        transition: "all 0.25s", border: "none", cursor: "pointer",
+      };
+      const styles = {
+        primary: { background: hov ? T.navyLight : T.navy, color: "#fff" },
+        gold: { background: hov ? T.gold : T.goldLight, color: "#fff" },
+        outline: { background: "transparent", color: hov ? T.teal : T.navy, border: `2px solid ${hov ? T.teal : T.navy}` },
+        outlineWhite: { background: "transparent", color: "#fff", border: "2px solid rgba(255,255,255,0.6)" },
+        teal: { background: hov ? T.teal : T.tealLight, color: "#fff" },
+        ghost: { background: hov ? T.ivory : "transparent", color: T.navy, border: `1px solid ${T.border}` },
+      };
+      return (
+        <button
+          style={{ ...base, ...styles[variant], ...style }}
+          onMouseEnter={() => setHov(true)}
+          onMouseLeave={() => setHov(false)}
+          onClick={onClick}
+        >{children}</button>
+      );
+    };
+
+    const SectionLabel = ({ children, center = false, light = false }) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: center ? "center" : "flex-start", marginBottom: 16 }}>
+        <div style={{ width: 32, height: 2, background: light ? T.goldLight : T.gold, borderRadius: 1, flexShrink: 0 }} />
+        <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: light ? T.goldLight : T.gold }}>{children}</span>
+        <div style={{ width: 32, height: 2, background: light ? T.goldLight : T.gold, borderRadius: 1, flexShrink: 0 }} />
+      </div>
+    );
+
+    const SectionTitle = ({ children, center = false, light = false, style = {} }) => (
+      <h2 style={{
+        fontFamily: "'Playfair Display', serif",
+        fontSize: "clamp(2rem, 3.5vw, 2.9rem)",
+        fontWeight: 500,
+        lineHeight: 1.2,
+        color: light ? "#fff" : T.navy,
+        textAlign: center ? "center" : "left",
+        letterSpacing: "-0.02em",
+        ...style,
+      }}>{children}</h2>
+    );
+
+    function useScrollFade() {
+      const ref = useRef(null);
+      useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const els = el.querySelectorAll(".fade-up");
+        const obs = new IntersectionObserver((entries) => {
+          entries.forEach((e, i) => {
+            if (e.isIntersecting) {
+              setTimeout(() => e.target.classList.add("visible"), i * 80);
+              obs.unobserve(e.target);
+            }
+          });
+        }, { threshold: 0.08 });
+        els.forEach(e => obs.observe(e));
+        return () => obs.disconnect();
+      }, []);
+      return ref;
+    }
+
+    // ─── NAV ───
+    const Nav = ({ page, setPage }) => {
+      const [scrolled, setScrolled] = useState(false);
+      const [menuOpen, setMenuOpen] = useState(false);
+
+      useEffect(() => {
+        const fn = () => setScrolled(window.scrollY > 30);
+        window.addEventListener("scroll", fn);
+        return () => window.removeEventListener("scroll", fn);
+      }, []);
+
+      const links = [
+        { id: "home", label: "Home" },
+        { id: "about", label: "About" },
+        { id: "departments", label: "Departments" },
+        { id: "doctors", label: "Doctors" },
+        { id: "patients", label: "Patients" },
+        { id: "contact", label: "Contact" },
+      ];
+
+      return (
+        <>
+          {/* Emergency strip */}
+          <div style={{ background: T.red, color: "#fff", textAlign: "center", padding: "8px 1rem", fontSize: "0.76rem", fontWeight: 700, letterSpacing: "0.04em", position: "relative", zIndex: 1001 }}>
+            🚨 24/7 EMERGENCY: <a href="tel:18009119911" style={{ color: "#fff", textDecoration: "underline" }}>1-800-911-9911</a> &nbsp;|&nbsp; Ambulance Dispatch Available Around the Clock
+          </div>
+
+          {/* Main nav */}
+          <nav style={{
+            position: "sticky", top: 0, zIndex: 1000,
+            background: scrolled ? "rgba(253,251,247,0.96)" : T.cream,
+            backdropFilter: "blur(12px)",
+            borderBottom: `1px solid ${T.border}`,
+            padding: "0 2rem",
+            height: 70, display: "flex", alignItems: "center", justifyContent: "space-between",
+            transition: "box-shadow 0.3s",
+            boxShadow: scrolled ? "0 2px 24px rgba(28,43,58,0.08)" : "none",
+          }}>
+            <div style={{ cursor: "pointer" }} onClick={() => setPage("home")}>
+              <Logo />
+            </div>
+
+            {/* Desktop links */}
+            <ul className="hide-mobile" style={{ display: "flex", gap: "0.2rem", listStyle: "none", margin: 0 }}>
+              {links.map(l => (
+                <li key={l.id}>
+                  <button
+                    onClick={() => { setPage(l.id); setMenuOpen(false); }}
+                    style={{
+                      background: "none", border: "none",
+                      padding: "8px 14px", borderRadius: 6,
+                      fontSize: "0.82rem", fontWeight: 700,
+                      letterSpacing: "0.05em", textTransform: "uppercase",
+                      color: page === l.id ? T.teal : T.textMid,
+                      cursor: "pointer",
+                      transition: "color 0.2s",
+                      borderBottom: page === l.id ? `2px solid ${T.teal}` : "2px solid transparent",
+                    }}
+                  >{l.label}</button>
+                </li>
+              ))}
+            </ul>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Btn small variant="gold" onClick={() => setPage("patients")}>📅 Book Now</Btn>
+              {/* Mobile hamburger */}
+              <button
+                className="show-mobile"
+                style={{ background: "none", border: `1px solid ${T.border}`, padding: "8px 10px", borderRadius: 6 }}
+                onClick={() => setMenuOpen(!menuOpen)}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {[0, 1, 2].map(i => (
+                    <span key={i} style={{
+                      display: "block", width: 22, height: 2, background: T.navy, borderRadius: 2,
+                      transform: menuOpen && i === 0 ? "rotate(45deg) translate(4px, 4px)" : menuOpen && i === 2 ? "rotate(-45deg) translate(4px, -4px)" : "none",
+                      opacity: menuOpen && i === 1 ? 0 : 1, transition: "all 0.3s"
+                    }} />
+                  ))}
+                </div>
+              </button>
+            </div>
+          </nav>
+
+          {/* Mobile menu */}
+          {menuOpen && (
+            <div style={{
+              position: "fixed", top: 118, left: 0, right: 0, bottom: 0,
+              background: T.cream, zIndex: 999,
+              padding: "2rem", display: "flex", flexDirection: "column", gap: "0.5rem",
+              animation: "fadeIn 0.2s ease",
+              overflowY: "auto",
+            }}>
+              {links.map(l => (
+                <button key={l.id} onClick={() => { setPage(l.id); setMenuOpen(false); }}
+                  style={{
+                    background: page === l.id ? T.ivory : "none", border: "none",
+                    padding: "1rem 1.25rem", borderRadius: 8, textAlign: "left",
+                    fontSize: "1.1rem", fontWeight: 700, color: page === l.id ? T.teal : T.navy,
+                    letterSpacing: "0.03em", borderLeft: page === l.id ? `4px solid ${T.teal}` : "4px solid transparent",
+                  }}>{l.label}
+                </button>
+              ))}
+              <div style={{ marginTop: "1rem" }}>
+                <Btn variant="gold" onClick={() => { setPage("patients"); setMenuOpen(false); }} style={{ width: "100%", justifyContent: "center" }}>📅 Book Appointment</Btn>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    };
+
+    // ─── PAGE: HOME ───
+    const HomePage = ({ setPage }) => {
+      const ref = useScrollFade();
+      const [count, setCount] = useState({ a: 0, b: 0, c: 0, d: 0 });
+      const countRef = useRef(null);
+
+      useEffect(() => {
+        const obs = new IntersectionObserver(([entry]) => {
+          if (entry.isIntersecting) {
+            const targets = { a: 95, b: 1200, c: 50, d: 40 };
+            const dur = 1800;
+            const start = Date.now();
+            const tick = () => {
+              const t = Math.min(1, (Date.now() - start) / dur);
+              const ease = 1 - Math.pow(1 - t, 3);
+              setCount({
+                a: Math.floor(ease * targets.a),
+                b: Math.floor(ease * targets.b),
+                c: Math.floor(ease * targets.c),
+                d: Math.floor(ease * targets.d),
+              });
+              if (t < 1) requestAnimationFrame(tick);
+            };
+            tick();
+            obs.disconnect();
+          }
+        }, { threshold: 0.3 });
+        if (countRef.current) obs.observe(countRef.current);
+        return () => obs.disconnect();
+      }, []);
+
+      const depts = [
+        { icon: "❤️", name: "Cardiac Sciences", desc: "Interventional cardiology, open-heart surgery, electrophysiology", color: "#FFF0EE" },
+        { icon: "🧠", name: "Neurosciences", desc: "Neurosurgery, stroke unit, cognitive neurology, spine", color: "#EEF4FF" },
+        { icon: "🦴", name: "Orthopaedics", desc: "Joint replacement, sports injuries, spine surgery, trauma", color: "#F0FFF4" },
+        { icon: "🔬", name: "Oncology Center", desc: "Medical, surgical & radiation oncology with precision therapy", color: "#FFF9EE" },
+        { icon: "👶", name: "Women & Child", desc: "Maternity, NICU, pediatric surgery, fetal medicine", color: "#F5EEFF" },
+        { icon: "🫁", name: "Pulmonology", desc: "Respiratory care, sleep disorders, bronchoscopy, COPD", color: "#EEFBFF" },
+      ];
+
+      const news = [
+        { tag: "Research", date: "Mar 14, 2026", title: "Sovereign Health Performs First Robotic Kidney Transplant in the Region", img: "🔬" },
+        { tag: "Award", date: "Mar 8, 2026", title: "Named #1 Hospital for Cardiac Care by National Health Board 2026", img: "🏆" },
+        { tag: "Community", date: "Feb 28, 2026", title: "Free Health Screening Camp Reaches 20,000 Patients This Quarter", img: "🤝" },
+      ];
+
+      return (
+        <div ref={ref}>
+          {/* HERO */}
+          <div style={{
+            minHeight: "92vh",
+            background: `linear-gradient(105deg, ${T.navy} 0%, ${T.navyLight} 40%, #2A3F52 100%)`,
+            display: "flex", alignItems: "center",
+            position: "relative", overflow: "hidden",
+            padding: "4rem 2rem",
+          }}>
+            {/* Decorative */}
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+            <div style={{ position: "absolute", right: "-5%", top: "10%", width: "45vw", maxWidth: 700, aspectRatio: "1", borderRadius: "50%", background: "radial-gradient(circle, rgba(184,134,11,0.12) 0%, transparent 65%)" }} />
+            <div style={{ position: "absolute", left: "30%", bottom: "-10%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(46,125,130,0.18) 0%, transparent 65%)" }} />
+
+            <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center", position: "relative", zIndex: 2 }}>
+              <div>
+                {/* Badge */}
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(184,134,11,0.15)", border: "1px solid rgba(184,134,11,0.35)", borderRadius: 100, padding: "6px 16px", marginBottom: "1.75rem" }}>
+                  <span style={{ fontSize: "0.6rem", color: T.goldLight }}>★★★★★</span>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.goldLight }}>JCI & NABH Gold Accredited</span>
+                </div>
+
+                <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2.6rem, 5.5vw, 4.2rem)", fontWeight: 500, color: "#fff", lineHeight: 1.08, letterSpacing: "-0.03em", marginBottom: "1.5rem" }}>
+                  Where Healing<br />
+                  <em style={{ color: T.goldLight, fontStyle: "italic" }}>Meets Excellence</em><br />
+                  <span style={{ fontWeight: 700 }}>& Compassion</span>
+                </h1>
+
+                <p style={{ color: "rgba(255,255,255,0.72)", fontSize: "1.05rem", lineHeight: 1.8, maxWidth: 480, marginBottom: "2.5rem", fontFamily: "'Lato', sans-serif", fontWeight: 300 }}>
+                  Sovereign Health Medical Center delivers quaternary-level care across 50+ specialties — backed by world-class technology and a thousand compassionate hands.
+                </p>
+
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                  <Btn variant="gold" onClick={() => setPage("patients")}>📅 Book Appointment</Btn>
+                  <Btn variant="outlineWhite" onClick={() => setPage("departments")}>Explore Departments →</Btn>
+                </div>
+
+                {/* Accreditation logos row */}
+                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", marginTop: "2.5rem", flexWrap: "wrap" }}>
+                  {["JCI Certified", "NABH Gold", "ISO 9001", "HIMSS Level 7"].map(a => (
+                    <div key={a} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "6px 12px", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.07em", color: "rgba(255,255,255,0.65)", textTransform: "uppercase" }}>{a}</div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Appointment Card */}
+              <div className="hide-mobile" style={{ background: "rgba(255,255,255,0.06)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 20, padding: "2rem", }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.3rem", color: "#fff", marginBottom: "0.4rem" }}>Find a Specialist</div>
+                <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.55)", marginBottom: "1.5rem" }}>Same-day appointments available</div>
+
+                {[
+                  { label: "Department", options: ["Cardiology", "Neurology", "Oncology", "Orthopaedics", "Pediatrics"] },
+                  { label: "Consultation Type", options: ["In-Person Visit", "Video Consult", "Emergency"] },
+                ].map(f => (
+                  <div key={f.label} style={{ marginBottom: "1rem" }}>
+                    <label style={{ display: "block", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", marginBottom: 6 }}>{f.label}</label>
+                    <select style={{ width: "100%", background: "rgba(255,255,255,0.1)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "11px 14px", color: "#fff", fontSize: "0.875rem" }}>
+                      {f.options.map(o => <option key={o} style={{ background: T.navy }}>{o}</option>)}
+                    </select>
+                  </div>
+                ))}
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+                  {["Preferred Date", "Preferred Time"].map(l => (
+                    <div key={l}>
+                      <label style={{ display: "block", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", marginBottom: 6 }}>{l}</label>
+                      <input type={l.includes("Date") ? "date" : "time"} style={{ width: "100%", background: "rgba(255,255,255,0.1)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "11px 14px", color: "#fff", fontSize: "0.875rem", colorScheme: "dark" }} />
+                    </div>
+                  ))}
+                </div>
+                <Btn variant="gold" style={{ width: "100%", justifyContent: "center" }} onClick={() => setPage("patients")}>Search Availability →</Btn>
+
+                {/* Trust signals */}
+                <div style={{ display: "flex", justifyContent: "space-around", marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                  {[["⚡", "Instant Confirm"], ["🔒", "Secure & Private"], ["💬", "24/7 Support"]].map(([icon, label]) => (
+                    <div key={label} style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "1.2rem", marginBottom: 4 }}>{icon}</div>
+                      <div style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.5)", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* STATS COUNTER */}
+          <div ref={countRef} style={{ background: T.gold, padding: "3rem 2rem" }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2rem", textAlign: "center" }}>
+              {[
+                { val: `${count.a}%`, label: "Patient Satisfaction", sub: "Based on 40,000+ surveys" },
+                { val: `${count.b}+`, label: "Beds Across Campuses", sub: "ICU, HDU, General & Day" },
+                { val: `${count.c}+`, label: "Clinical Specialties", sub: "Quaternary-level care" },
+                { val: `${count.d}+`, label: "Years of Excellence", sub: "Serving since 1985" },
+              ].map(s => (
+                <div key={s.label}>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700, color: "#fff", lineHeight: 1 }}>{s.val}</div>
+                  <div style={{ fontWeight: 700, color: "rgba(255,255,255,0.9)", fontSize: "0.875rem", marginTop: 6, letterSpacing: "0.04em" }}>{s.label}</div>
+                  <div style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.65)", marginTop: 3 }}>{s.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Marquee */}
+          <div style={{ background: T.navy, padding: "14px 0", overflow: "hidden", borderBottom: `3px solid ${T.gold}` }}>
+            <div style={{ display: "flex", animation: "marquee 30s linear infinite", width: "max-content" }}>
+              {Array(2).fill(["Cardiac Surgery", "Robotic Procedures", "Bone Marrow Transplant", "Liver & Kidney Transplant", "Fetal Medicine", "Neuro-Oncology", "Spine Surgery", "Gamma Knife Radiosurgery", "TAVI / TAVR", "IVF & Fertility"]).flat().map((item, i) => (
+                <span key={i} style={{ padding: "0 2rem", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", whiteSpace: "nowrap", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
+                  <span style={{ color: T.goldLight, marginRight: 8 }}>✦</span>{item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* DEPARTMENTS */}
+          <section style={{ padding: "6rem 2rem", background: T.cream }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              <div className="fade-up" style={{ textAlign: "center", marginBottom: "3.5rem" }}>
+                <SectionLabel center>Clinical Excellence</SectionLabel>
+                <SectionTitle center style={{ marginTop: 12 }}>
+                  World-Class Departments &<br /><em>Specialist Care</em>
+                </SectionTitle>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
+                {depts.map((d, i) => (
+                  <DeptCard key={d.name} dept={d} delay={i * 70} setPage={setPage} />
+                ))}
+              </div>
+              <div style={{ textAlign: "center", marginTop: "3rem" }} className="fade-up">
+                <Btn variant="outline" onClick={() => setPage("departments")}>View All 50+ Departments →</Btn>
+              </div>
+            </div>
+          </section>
+
+          {/* WHY SOVEREIGN */}
+          <section style={{ padding: "6rem 2rem", background: T.ivory }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5rem", alignItems: "center" }}>
+              <div className="fade-up">
+                <SectionLabel>Why Choose Us</SectionLabel>
+                <SectionTitle style={{ marginTop: 12, marginBottom: "1.5rem" }}>
+                  A Century of Trust,<br /><em>Redefined</em> for Today
+                </SectionTitle>
+                <p style={{ color: T.textMid, lineHeight: 1.8, marginBottom: "2.5rem", fontWeight: 300, fontSize: "1.02rem" }}>
+                  Sovereign Health Medical Center stands at the intersection of clinical excellence and human compassion. With 40+ years of history, we continue to push the boundaries of what modern medicine can achieve.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  {[
+                    { icon: "🏆", title: "Nationally Ranked", desc: "Top 5 hospital in 14 specialties as per the National Health Rankings 2026" },
+                    { icon: "🤖", title: "Robotic & AI-Assisted Surgery", desc: "Da Vinci Xi, Mako, and proprietary AI diagnostic platforms" },
+                    { icon: "🌍", title: "International Patient Services", desc: "Multilingual coordinators, visa support & concierge medical travel" },
+                    { icon: "🔬", title: "Translational Research", desc: "Over 300 active clinical trials and breakthrough research programmes" },
+                  ].map(f => (
+                    <div key={f.title} className="fade-up" style={{ display: "flex", gap: "1rem", padding: "1.25rem", background: T.white, borderRadius: 12, border: `1px solid ${T.border}`, transition: "box-shadow 0.3s" }}>
+                      <div style={{ width: 46, height: 46, background: T.goldPale, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{f.icon}</div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.95rem", marginBottom: 3, color: T.navy }}>{f.title}</div>
+                        <div style={{ fontSize: "0.83rem", color: T.textMid, lineHeight: 1.6 }}>{f.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="fade-up">
+                {/* Big visual card */}
+                <div style={{ background: T.navy, borderRadius: 20, overflow: "hidden", boxShadow: "0 30px 80px rgba(28,43,58,0.2)" }}>
+                  <div style={{ padding: "2rem 2rem 1.5rem" }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.4rem", color: "#fff", marginBottom: 4 }}>Clinical Performance</div>
+                    <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", marginBottom: "1.75rem" }}>Real-time quality metrics</div>
+                    {[
+                      { label: "Patient Safety Score", val: 97 },
+                      { label: "Surgical Success Rate", val: 96 },
+                      { label: "Infection Prevention", val: 99 },
+                      { label: "Patient Satisfaction", val: 95 },
+                    ].map(p => (
+                      <ProgressBar key={p.label} {...p} />
+                    ))}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                    {[["🏥", "3", "Campuses"], ["👨‍⚕️", "600+", "Doctors"], ["🛏️", "1200+", "Beds"]].map(([icon, val, label]) => (
+                      <div key={label} style={{ padding: "1.25rem", textAlign: "center", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
+                        <div style={{ fontSize: "1.4rem", marginBottom: 4 }}>{icon}</div>
+                        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.5rem", color: T.goldLight, fontWeight: 700 }}>{val}</div>
+                        <div style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* FEATURED DOCTORS */}
+          <section style={{ padding: "6rem 2rem", background: T.cream }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              <div className="fade-up" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "3.5rem", flexWrap: "wrap", gap: "1rem" }}>
+                <div>
+                  <SectionLabel>Our Specialists</SectionLabel>
+                  <SectionTitle style={{ marginTop: 12 }}>Meet the Minds<br />Behind <em>Your Recovery</em></SectionTitle>
+                </div>
+                <Btn variant="outline" onClick={() => setPage("doctors")} small>All Doctors →</Btn>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.5rem" }}>
+                {[
+                  { name: "Dr. Eleanor Voss", spec: "Chief of Cardiology", exp: "28 yrs", rating: "4.9", emoji: "👩‍⚕️" },
+                  { name: "Dr. Nathan Adeyemi", spec: "Neurosurgery", exp: "22 yrs", rating: "5.0", emoji: "👨‍⚕️" },
+                  { name: "Dr. Isabelle Fontaine", spec: "Oncology", exp: "19 yrs", rating: "4.8", emoji: "👩‍⚕️" },
+                  { name: "Dr. Rajiv Mehta", spec: "Orthopaedics", exp: "25 yrs", rating: "4.9", emoji: "🧑‍⚕️" },
+                ].map((doc, i) => <DoctorCard key={doc.name} doc={doc} delay={i * 70} setPage={setPage} />)}
+              </div>
+            </div>
+          </section>
+
+          {/* TESTIMONIALS */}
+          <section style={{ padding: "6rem 2rem", background: `linear-gradient(135deg, ${T.navy} 0%, ${T.navyLight} 100%)`, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+            <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 2 }}>
+              <div className="fade-up" style={{ textAlign: "center", marginBottom: "3.5rem" }}>
+                <SectionLabel center light>Patient Stories</SectionLabel>
+                <SectionTitle center light style={{ marginTop: 12 }}>Lives Changed,<br /><em>Families Restored</em></SectionTitle>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
+                {[
+                  { text: "After my triple bypass at Sovereign, I was walking within 3 days. The cardiac team's precision and the nursing staff's warmth made a harrowing experience feel manageable. Forever grateful.", name: "Thomas W.", since: "Cardiac Patient, 2025", emoji: "👤" },
+                  { text: "Our daughter was born 10 weeks premature. The NICU team at Sovereign treated her — and us — like family. She is now a thriving, healthy 2-year-old. Words cannot express our gratitude.", name: "Sarah & Mike D.", since: "NICU Parents, 2024", emoji: "👤" },
+                  { text: "My spine surgery was performed with robotic assistance. Recovery was remarkably fast — I was back to hiking within 6 weeks. The orthopaedic team is simply world-class.", name: "Raymond O.", since: "Spinal Surgery Patient, 2025", emoji: "👤" },
+                ].map((t, i) => (
+                  <div key={i} className="fade-up" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "2rem" }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "4rem", color: T.gold, lineHeight: 0.7, marginBottom: "1rem" }}>"</div>
+                    <p style={{ color: "rgba(255,255,255,0.78)", fontSize: "0.9rem", lineHeight: 1.8, fontStyle: "italic", marginBottom: "1.5rem" }}>{t.text}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: T.gold, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{t.emoji}</div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem" }}>{t.name}</div>
+                        <div style={{ fontSize: "0.73rem", color: "rgba(255,255,255,0.45)" }}>{t.since}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* NEWS */}
+          <section style={{ padding: "6rem 2rem", background: T.ivory }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              <div className="fade-up" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "3.5rem", flexWrap: "wrap", gap: "1rem" }}>
+                <div>
+                  <SectionLabel>Latest Updates</SectionLabel>
+                  <SectionTitle style={{ marginTop: 12 }}>News & <em>Milestones</em></SectionTitle>
+                </div>
+                <Btn variant="ghost" small>All News →</Btn>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
+                {news.map((n, i) => (
+                  <div key={i} className="fade-up" style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.3s, box-shadow 0.3s" }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 20px 50px rgba(28,43,58,0.12)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                    <div style={{ height: 160, background: T.ivory, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3.5rem", borderBottom: `1px solid ${T.border}`, position: "relative" }}>
+                      {n.img}
+                      <span style={{ position: "absolute", top: 12, left: 12, background: T.navy, color: "#fff", fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 10px", borderRadius: 100 }}>{n.tag}</span>
+                    </div>
+                    <div style={{ padding: "1.5rem" }}>
+                      <div style={{ fontSize: "0.72rem", color: T.textLight, fontWeight: 700, letterSpacing: "0.06em", marginBottom: "0.6rem" }}>{n.date}</div>
+                      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.05rem", fontWeight: 500, color: T.navy, lineHeight: 1.4 }}>{n.title}</h3>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* CTA BANNER */}
+          <section style={{ padding: "5rem 2rem", background: T.teal, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", right: "-5%", top: "50%", transform: "translateY(-50%)", width: 400, height: 400, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+            <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 2 }} className="fade-up">
+              <SectionLabel center light>Get Started</SectionLabel>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2rem, 4vw, 3rem)", color: "#fff", fontWeight: 500, margin: "1rem 0 1.5rem", lineHeight: 1.15 }}>
+                Your Health Journey<br /><em>Begins with One Step</em>
+              </h2>
+              <p style={{ color: "rgba(255,255,255,0.78)", marginBottom: "2.5rem", fontSize: "1rem", lineHeight: 1.75, fontWeight: 300 }}>
+                Our care coordinators are standing by to guide you to the right specialist, right away.
+              </p>
+              <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+                <Btn variant="gold" onClick={() => setPage("patients")}>📅 Book Appointment</Btn>
+                <Btn variant="outlineWhite" onClick={() => setPage("contact")}>📞 Call Us Now</Btn>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    };
+
+    // ─── PROGRESS BAR ───
+    const ProgressBar = ({ label, val }) => {
+      const [width, setWidth] = useState(0);
+      const ref = useRef(null);
+      useEffect(() => {
+        const obs = new IntersectionObserver(([entry]) => {
+          if (entry.isIntersecting) { setTimeout(() => setWidth(val), 200); obs.disconnect(); }
+        }, { threshold: 0.3 });
+        if (ref.current) obs.observe(ref.current);
+        return () => obs.disconnect();
+      }, [val]);
+      return (
+        <div ref={ref} style={{ marginBottom: "1.25rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "rgba(255,255,255,0.7)", fontWeight: 700, marginBottom: 8 }}>
+            <span>{label}</span><span style={{ color: T.goldLight }}>{val}%</span>
+          </div>
+          <div style={{ height: 5, background: "rgba(255,255,255,0.1)", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${width}%`, background: `linear-gradient(90deg, ${T.gold}, ${T.goldLight})`, borderRadius: 3, transition: "width 1.4s ease" }} />
+          </div>
+        </div>
+      );
+    };
+
+    // ─── DEPT CARD ───
+    const DeptCard = ({ dept, delay, setPage }) => {
+      const [hov, setHov] = useState(false);
+      return (
+        <div className="fade-up"
+          style={{ background: hov ? dept.color : T.white, border: `1px solid ${hov ? "transparent" : T.border}`, borderRadius: 16, padding: "1.75rem", cursor: "pointer", transition: "all 0.3s", transform: hov ? "translateY(-5px)" : "none", boxShadow: hov ? "0 16px 50px rgba(28,43,58,0.1)" : "none" }}
+          onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+          onClick={() => setPage("departments")}>
+          <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>{dept.icon}</div>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", fontWeight: 600, color: T.navy, marginBottom: "0.5rem" }}>{dept.name}</h3>
+          <p style={{ fontSize: "0.82rem", color: T.textMid, lineHeight: 1.65, marginBottom: "1.25rem" }}>{dept.desc}</p>
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, color: T.teal, letterSpacing: "0.04em" }}>Learn More →</span>
+        </div>
+      );
+    };
+
+    // ─── DOCTOR CARD ───
+    const DoctorCard = ({ doc, setPage }) => {
+      const [hov, setHov] = useState(false);
+      return (
+        <div className="fade-up"
+          style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "all 0.3s", transform: hov ? "translateY(-5px)" : "none", boxShadow: hov ? "0 16px 50px rgba(28,43,58,0.1)" : "none" }}
+          onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+          <div style={{ aspectRatio: "1", background: `linear-gradient(135deg, ${T.ivory}, ${T.goldPale})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3.5rem", borderBottom: `1px solid ${T.border}` }}>{doc.emoji}</div>
+          <div style={{ padding: "1.25rem 1.5rem 1.5rem" }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.05rem", fontWeight: 600, color: T.navy, marginBottom: 2 }}>{doc.name}</div>
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: T.teal, marginBottom: "0.75rem" }}>{doc.spec}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: T.textLight, marginBottom: "1rem" }}>
+              <span>⭐ {doc.rating}</span><span>Exp: {doc.exp}</span>
+            </div>
+            <Btn small variant="primary" onClick={() => setPage("patients")} style={{ width: "100%", justifyContent: "center" }}>Book Appointment</Btn>
+          </div>
+        </div>
+      );
+    };
+
+    // ─── PAGE: ABOUT ───
+    const AboutPage = () => {
+      const ref = useScrollFade();
+      const milestones = [
+        { year: "1985", title: "Founded", desc: "Established as a 50-bed general hospital in the heart of the city." },
+        { year: "1998", title: "NABH Accreditation", desc: "First hospital in the region to receive NABH Gold certification." },
+        { year: "2007", title: "Quaternary Expansion", desc: "Launched the Cardiac Transplant & Robotic Surgery programs." },
+        { year: "2015", title: "JCI Certified", desc: "Joint Commission International accreditation — a global benchmark." },
+        { year: "2021", title: "Digital Transformation", desc: "Launched AI-assisted diagnostics and the HIMSS Level 7 EMR system." },
+        { year: "2026", title: "Today", desc: "1,200 beds, 600+ doctors, 50+ specialties across 3 campuses." },
+      ];
+
+      const leaders = [
+        { name: "Prof. Sir Alistair Grey", role: "Chairman & CEO", emoji: "👨‍💼" },
+        { name: "Dr. Meredith Okafor", role: "Chief Medical Officer", emoji: "👩‍⚕️" },
+        { name: "Dr. Victor Tanaka", role: "Director of Surgery", emoji: "🧑‍⚕️" },
+        { name: "Ms. Ingrid Larsen", role: "Chief Nursing Officer", emoji: "👩‍⚕️" },
+      ];
+
+      return (
+        <div ref={ref}>
+          {/* Hero */}
+          <div style={{ background: T.ivory, padding: "5rem 2rem 4rem", borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }} className="fade-up">
+              <SectionLabel center>Our Story</SectionLabel>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2.4rem, 5vw, 3.8rem)", fontWeight: 500, color: T.navy, margin: "1rem 0 1.5rem", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                Four Decades of <em style={{ fontStyle: "italic", color: T.gold }}>Healing</em><br />& Human Excellence
+              </h1>
+              <p style={{ color: T.textMid, fontSize: "1.05rem", lineHeight: 1.8, fontWeight: 300, maxWidth: 600, margin: "0 auto" }}>
+                Since 1985, Sovereign Health has been more than a hospital — it has been a promise. A promise of compassionate, evidence-based care for every patient, from every walk of life.
+              </p>
+            </div>
+          </div>
+
+          {/* Mission Vision Values */}
+          <section style={{ padding: "6rem 2rem", background: T.cream }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem" }}>
+              {[
+                { icon: "🎯", title: "Mission", color: T.tealPale, accent: T.teal, text: "To deliver exceptional, patient-centric healthcare that transforms lives and sets global standards for clinical quality and compassionate service." },
+                { icon: "🔭", title: "Vision", color: T.goldPale, accent: T.gold, text: "To be the most trusted healthcare institution in the world — leading through innovation, research, and an unwavering commitment to healing." },
+                { icon: "💎", title: "Values", color: "#EEF4FF", accent: "#3B6FD4", text: "Integrity · Excellence · Compassion · Innovation · Respect. These five values guide every decision, every procedure, and every interaction within our walls." },
+              ].map(v => (
+                <div key={v.title} className="fade-up" style={{ background: v.color, border: `1px solid ${T.border}`, borderRadius: 20, padding: "2.5rem", position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: v.accent }} />
+                  <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>{v.icon}</div>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.5rem", color: T.navy, marginBottom: "1rem" }}>{v.title}</h3>
+                  <p style={{ color: T.textMid, lineHeight: 1.75, fontSize: "0.9rem" }}>{v.text}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Timeline */}
+          <section style={{ padding: "6rem 2rem", background: T.navy }}>
+            <div style={{ maxWidth: 900, margin: "0 auto" }}>
+              <div className="fade-up" style={{ textAlign: "center", marginBottom: "4rem" }}>
+                <SectionLabel center light>Our Journey</SectionLabel>
+                <SectionTitle center light style={{ marginTop: 12 }}>Milestones That <em>Define</em> Us</SectionTitle>
+              </div>
+              <div style={{ position: "relative" }}>
+                <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 0, bottom: 0, width: 2, background: "rgba(255,255,255,0.1)" }} className="hide-mobile" />
+                {milestones.map((m, i) => (
+                  <div key={m.year} className="fade-up" style={{ display: "flex", gap: "2rem", alignItems: "flex-start", marginBottom: "2.5rem", flexDirection: i % 2 === 0 ? "row" : "row-reverse" }}>
+                    <div style={{ flex: 1, textAlign: i % 2 === 0 ? "right" : "left" }} className="hide-mobile">
+                      {i % 2 === 0 && (
+                        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "1.5rem" }}>
+                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", color: "#fff", marginBottom: 4 }}>{m.title}</div>
+                          <div style={{ fontSize: "0.83rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>{m.desc}</div>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ width: 60, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 52, height: 52, borderRadius: "50%", background: T.gold, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Playfair Display', serif", fontSize: "0.78rem", fontWeight: 700, color: "#fff", textAlign: "center", lineHeight: 1.2 }}>{m.year}</div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div className="hide-mobile">
+                        {i % 2 !== 0 && (
+                          <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "1.5rem" }}>
+                            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.1rem", color: "#fff", marginBottom: 4 }}>{m.title}</div>
+                            <div style={{ fontSize: "0.83rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>{m.desc}</div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="show-mobile" style={{ display: "flex", flexDirection: "column" }}>
+                        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "1.25rem" }}>
+                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", color: "#fff", marginBottom: 4 }}>{m.title}</div>
+                          <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>{m.desc}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Leadership */}
+          <section style={{ padding: "6rem 2rem", background: T.cream }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              <div className="fade-up" style={{ textAlign: "center", marginBottom: "3.5rem" }}>
+                <SectionLabel center>Leadership</SectionLabel>
+                <SectionTitle center style={{ marginTop: 12 }}>The Visionaries <em>Guiding</em> Our Mission</SectionTitle>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.5rem" }}>
+                {leaders.map(l => (
+                  <div key={l.name} className="fade-up" style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", textAlign: "center" }}>
+                    <div style={{ padding: "2.5rem 1.5rem 1.5rem", background: T.ivory }}>
+                      <div style={{ fontSize: "3.5rem", marginBottom: "1rem" }}>{l.emoji}</div>
+                      <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.05rem", color: T.navy, marginBottom: 4 }}>{l.name}</h4>
+                      <div style={{ fontSize: "0.72rem", color: T.teal, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>{l.role}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    };
+
+    // ─── PAGE: DEPARTMENTS ───
+    const DepartmentsPage = () => {
+      const ref = useScrollFade();
+      const [active, setActive] = useState(null);
+
+      const depts = [
+        { icon: "❤️", name: "Cardiac Sciences", color: "#FFF0EE", services: ["Interventional Cardiology", "Open-Heart Surgery", "Electrophysiology", "TAVI / TAVR", "Heart Transplant", "Cardiac Rehabilitation"], head: "Dr. Eleanor Voss", description: "Our Cardiac Sciences department is a comprehensive heart care destination, performing over 5,000 cardiac procedures annually. Equipped with 4 cath labs and 2 dedicated cardiac OTs." },
+        { icon: "🧠", name: "Neurosciences", color: "#EEF4FF", services: ["Neurosurgery", "Stroke Unit", "Gamma Knife Surgery", "Cognitive Neurology", "Spine Surgery", "Neurorehabilitation"], head: "Dr. Nathan Adeyemi", description: "A Centre of Excellence in brain, spine, and nerve care, our Neurosciences wing features a dedicated stroke response team with a door-to-needle time under 45 minutes." },
+        { icon: "🦴", name: "Orthopaedics", color: "#F0FFF4", services: ["Joint Replacement", "Sports Medicine", "Spine Surgery", "Arthroscopy", "Trauma & Fractures", "Hand & Microsurgery"], head: "Dr. Rajiv Mehta", description: "Led by fellowship-trained surgeons using robotic-assisted Mako technology, our orthopaedics unit achieves outstanding outcomes with minimally invasive techniques." },
+        { icon: "🔬", name: "Oncology", color: "#FFF9EE", services: ["Medical Oncology", "Surgical Oncology", "Radiation Oncology", "Bone Marrow Transplant", "Immunotherapy", "Palliative Care"], head: "Dr. Isabelle Fontaine", description: "Our multidisciplinary tumour board reviews every cancer case, integrating the latest precision oncology, genomic testing, and cutting-edge immunotherapy." },
+        { icon: "👶", name: "Women & Child Health", color: "#F5EEFF", services: ["High-Risk Obstetrics", "Fetal Medicine", "Neonatology & NICU", "Paediatric Surgery", "Fertility & IVF", "Gynaecological Oncology"], head: "Dr. Sofia Brennan", description: "From preconception counselling to complex neonatal interventions, our Women & Child Health Centre provides seamless, family-centred care across every stage." },
+        { icon: "🫁", name: "Pulmonology", color: "#EEFBFF", services: ["Interventional Bronchoscopy", "Lung Cancer Screening", "Sleep Medicine", "COPD Management", "Pulmonary Hypertension", "Lung Transplant"], head: "Dr. Ahmed Hassan", description: "Our pulmonologists employ the latest EBUS, bronchial thermoplasty, and high-flow oxygen technologies for complex respiratory conditions." },
+        { icon: "🏥", name: "Transplant Sciences", color: "#EFFFEF", services: ["Kidney Transplant", "Liver Transplant", "Heart Transplant", "Pancreas Transplant", "Bone Marrow Transplant", "Cornea Transplant"], head: "Dr. Yuki Tanaka", description: "One of the region's highest-volume transplant programmes, with 200+ organ transplants annually and a 5-year graft survival rate exceeding national benchmarks." },
+        { icon: "🦷", name: "Dental & Oral Surgery", color: "#FFFBEE", services: ["Maxillofacial Surgery", "Dental Implants", "Orthodontics", "Oral Oncology", "Cleft Surgery", "Smile Reconstruction"], head: "Dr. Laura Chen", description: "A full-spectrum oral and maxillofacial unit offering everything from routine dentistry to complex jaw reconstruction and head & neck oncology management." },
+      ];
+
+      return (
+        <div ref={ref}>
+          <div style={{ background: T.navy, padding: "5rem 2rem 4rem" }}>
+            <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }} className="fade-up">
+              <SectionLabel center light>Clinical Services</SectionLabel>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2.2rem, 5vw, 3.5rem)", color: "#fff", fontWeight: 500, margin: "1rem 0 1.5rem", lineHeight: 1.1 }}>
+                50+ Departments,<br /><em style={{ color: T.goldLight }}>One Mission</em>
+              </h1>
+              <p style={{ color: "rgba(255,255,255,0.65)", fontSize: "1rem", lineHeight: 1.8, fontWeight: 300 }}>Every specialty, every subspecialty — under one roof, guided by a single purpose: your recovery.</p>
+            </div>
+          </div>
+
+          <section style={{ padding: "5rem 2rem", background: T.cream }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
+                {depts.map((d, i) => (
+                  <div key={d.name} className="fade-up" style={{ background: active === i ? d.color : T.white, border: `1px solid ${active === i ? "transparent" : T.border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "all 0.3s", boxShadow: active === i ? "0 16px 50px rgba(28,43,58,0.12)" : "none" }}
+                    onClick={() => setActive(active === i ? null : i)}>
+                    <div style={{ padding: "1.75rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ fontSize: "2.2rem", marginBottom: "0.75rem" }}>{d.icon}</div>
+                        <div style={{ width: 28, height: 28, borderRadius: "50%", border: `1.5px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: T.textLight, transition: "transform 0.3s", transform: active === i ? "rotate(45deg)" : "none" }}>+</div>
+                      </div>
+                      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.15rem", fontWeight: 600, color: T.navy, marginBottom: "0.4rem" }}>{d.name}</h3>
+                      <div style={{ fontSize: "0.72rem", color: T.teal, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "0.75rem" }}>Head: {d.head}</div>
+                      {active === i && (
+                        <div style={{ animation: "fadeIn 0.3s ease" }}>
+                          <p style={{ fontSize: "0.85rem", color: T.textMid, lineHeight: 1.75, marginBottom: "1.25rem" }}>{d.description}</p>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {d.services.map(s => <span key={s} style={{ background: T.navy, color: "#fff", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.05em", padding: "4px 10px", borderRadius: 100 }}>{s}</span>)}
+                          </div>
+                        </div>
+                      )}
+                      {active !== i && <p style={{ fontSize: "0.82rem", color: T.textLight }}>{d.services.slice(0, 3).join(" · ")} ···</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    };
+
+    // ─── PAGE: DOCTORS ───
+    const DoctorsPage = ({ setPage }) => {
+      const ref = useScrollFade();
+      const [filter, setFilter] = useState("All");
+      const specs = ["All", "Cardiology", "Neurology", "Oncology", "Orthopaedics", "Paediatrics", "Pulmonology"];
+
+      const docs = [
+        { name: "Dr. Eleanor Voss", spec: "Cardiology", exp: "28 yrs", rating: "4.9", emoji: "👩‍⚕️", degree: "MD, FACC, FESC", avail: "Mon–Fri" },
+        { name: "Dr. Nathan Adeyemi", spec: "Neurology", exp: "22 yrs", rating: "5.0", emoji: "👨‍⚕️", degree: "MD, MCh, FRCS", avail: "Mon–Thu" },
+        { name: "Dr. Isabelle Fontaine", spec: "Oncology", exp: "19 yrs", rating: "4.8", emoji: "👩‍⚕️", degree: "MD, DM (Oncology)", avail: "Tue–Sat" },
+        { name: "Dr. Rajiv Mehta", spec: "Orthopaedics", exp: "25 yrs", rating: "4.9", emoji: "🧑‍⚕️", degree: "MS, MCh, FRCS", avail: "Mon–Fri" },
+        { name: "Dr. Sofia Brennan", spec: "Paediatrics", exp: "16 yrs", rating: "5.0", emoji: "👩‍⚕️", degree: "MD, DCH, MRCP", avail: "Mon–Sat" },
+        { name: "Dr. Ahmed Hassan", spec: "Pulmonology", exp: "20 yrs", rating: "4.7", emoji: "👨‍⚕️", degree: "MD, DM (Chest)", avail: "Wed–Sun" },
+        { name: "Dr. Yuki Tanaka", spec: "Cardiology", exp: "15 yrs", rating: "4.9", emoji: "🧑‍⚕️", degree: "MD, FACC", avail: "Mon–Fri" },
+        { name: "Dr. Priya Nair", spec: "Neurology", exp: "12 yrs", rating: "4.8", emoji: "👩‍⚕️", degree: "MD, DM (Neuro)", avail: "Tue–Sat" },
+      ];
+
+      const filtered = filter === "All" ? docs : docs.filter(d => d.spec === filter);
+
+      return (
+        <div ref={ref}>
+          <div style={{ background: T.ivory, padding: "5rem 2rem 4rem", borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }} className="fade-up">
+              <SectionLabel center>Our Medical Team</SectionLabel>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2.2rem, 5vw, 3.5rem)", color: T.navy, fontWeight: 500, margin: "1rem 0 1.5rem", lineHeight: 1.1 }}>
+                600+ Specialists,<br /><em>One Shared Purpose</em>
+              </h1>
+              <p style={{ color: T.textMid, fontSize: "1rem", lineHeight: 1.8, fontWeight: 300 }}>Each of our physicians is fellowship-trained, internationally credentialed, and deeply committed to your care.</p>
+            </div>
+          </div>
+
+          <section style={{ padding: "4rem 2rem 6rem", background: T.cream }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              {/* Filter */}
+              <div className="fade-up" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "3rem", overflowX: "auto", paddingBottom: 4 }}>
+                {specs.map(s => (
+                  <button key={s} onClick={() => setFilter(s)}
+                    style={{ padding: "8px 18px", borderRadius: 100, border: `1.5px solid ${filter === s ? T.teal : T.border}`, background: filter === s ? T.teal : T.white, color: filter === s ? "#fff" : T.textMid, fontSize: "0.8rem", fontWeight: 700, letterSpacing: "0.04em", whiteSpace: "nowrap", transition: "all 0.2s" }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1.5rem" }}>
+                {filtered.map((doc, i) => (
+                  <div key={doc.name} className="fade-up" style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", transition: "all 0.3s" }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-5px)"; e.currentTarget.style.boxShadow = "0 16px 50px rgba(28,43,58,0.1)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                    <div style={{ padding: "2rem 1.5rem 1rem", background: T.ivory, textAlign: "center" }}>
+                      <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>{doc.emoji}</div>
+                      <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", color: T.navy, marginBottom: 2 }}>{doc.name}</h3>
+                      <div style={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: T.teal }}>{doc.spec}</div>
+                      <div style={{ fontSize: "0.72rem", color: T.textLight, marginTop: 4 }}>{doc.degree}</div>
+                    </div>
+                    <div style={{ padding: "1rem 1.5rem 1.5rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: T.textLight, marginBottom: "1rem" }}>
+                        <span>⭐ {doc.rating} rating</span>
+                        <span>{doc.exp} exp.</span>
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: T.textMid, marginBottom: "1rem" }}>🗓 Available: {doc.avail}</div>
+                      <Btn small variant="primary" onClick={() => setPage("patients")} style={{ width: "100%", justifyContent: "center" }}>Book Appointment</Btn>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    };
+
+    // ─── PAGE: PATIENTS ───
+    const PatientsPage = () => {
+      const ref = useScrollFade();
+      const [submitted, setSubmitted] = useState(false);
+      const [form, setForm] = useState({ name: "", phone: "", email: "", dept: "", date: "", time: "", type: "In-Person", notes: "" });
+      const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+      const handleSubmit = () => {
+        if (form.name && form.phone && form.dept) setSubmitted(true);
+      };
+
+      return (
+        <div ref={ref}>
+          <div style={{ background: T.teal, padding: "5rem 2rem 4rem" }}>
+            <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }} className="fade-up">
+              <SectionLabel center light>Patient Services</SectionLabel>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2.2rem, 5vw, 3.5rem)", color: "#fff", fontWeight: 500, margin: "1rem 0 1.25rem", lineHeight: 1.1 }}>
+                Your Appointment,<br /><em>Your Way</em>
+              </h1>
+              <p style={{ color: "rgba(255,255,255,0.75)", lineHeight: 1.8, fontWeight: 300 }}>Book in person, video, or emergency — confirmed in minutes.</p>
+            </div>
+          </div>
+
+          <section style={{ padding: "5rem 2rem 6rem", background: T.cream }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: "4rem", alignItems: "flex-start" }}>
+              {/* Info */}
+              <div className="fade-up">
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.7rem", color: T.navy, marginBottom: "1.5rem" }}>Why Book with Sovereign?</h2>
+                {[
+                  { icon: "⚡", t: "Same-Day Confirmation", d: "Your booking is confirmed via SMS & email instantly — no waiting, no uncertainty." },
+                  { icon: "🔒", t: "Complete Privacy", d: "Your medical data is protected by ISO 27001-certified security infrastructure." },
+                  { icon: "🌐", t: "Teleconsultation Available", d: "Speak with specialists from anywhere in the world via our encrypted video platform." },
+                  { icon: "💳", t: "Insurance Coordination", d: "We handle 300+ insurance TPA claims directly — cashless across major plans." },
+                  { icon: "🚐", t: "Free Ambulance Service", d: "Emergency pickup anywhere in the city within 12 minutes. Call 1-800-911-9911." },
+                  { icon: "📱", t: "Patient App & Portal", d: "Track reports, refill prescriptions, and message your doctor anytime." },
+                ].map(f => (
+                  <div key={f.t} className="fade-up" style={{ display: "flex", gap: "1rem", padding: "1rem 0", borderBottom: `1px solid ${T.border}` }}>
+                    <div style={{ fontSize: "1.5rem", width: 36, textAlign: "center", flexShrink: 0, marginTop: 2 }}>{f.icon}</div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.9rem", color: T.navy, marginBottom: 3 }}>{f.t}</div>
+                      <div style={{ fontSize: "0.8rem", color: T.textMid, lineHeight: 1.65 }}>{f.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Form */}
+              <div className="fade-up">
+                {submitted ? (
+                  <div style={{ background: "#EFFFEF", border: `2px solid #4CAF50`, borderRadius: 20, padding: "3rem", textAlign: "center" }}>
+                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✅</div>
+                    <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.6rem", color: T.navy, marginBottom: "0.75rem" }}>Appointment Requested!</h3>
+                    <p style={{ color: T.textMid, lineHeight: 1.75, marginBottom: "1.5rem" }}>Thank you, <strong>{form.name}</strong>. Our care coordinator will contact you at <strong>{form.phone}</strong> within 15 minutes to confirm your booking.</p>
+                    <Btn variant="teal" onClick={() => setSubmitted(false)}>Book Another →</Btn>
+                  </div>
+                ) : (
+                  <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 20, padding: "2.5rem", boxShadow: "0 20px 60px rgba(28,43,58,0.06)" }}>
+                    <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.5rem", color: T.navy, marginBottom: "0.5rem" }}>Request an Appointment</h3>
+                    <p style={{ fontSize: "0.82rem", color: T.textLight, marginBottom: "2rem" }}>All fields marked * are required</p>
+
+                    {/* Type tabs */}
+                    <div style={{ display: "flex", gap: 0, marginBottom: "1.75rem", background: T.ivory, borderRadius: 10, padding: 4 }}>
+                      {["In-Person", "Video Consult", "Emergency"].map(t => (
+                        <button key={t} onClick={() => set("type", t)}
+                          style={{ flex: 1, padding: "9px 6px", border: "none", borderRadius: 8, background: form.type === t ? T.teal : "transparent", color: form.type === t ? "#fff" : T.textMid, fontWeight: 700, fontSize: "0.72rem", letterSpacing: "0.04em", transition: "all 0.2s", cursor: "pointer" }}>
+                          {t === "In-Person" ? "🏥" : t === "Video Consult" ? "💻" : "🚨"} {t}
+                        </button>
+                      ))}
+                    </div>
+
+                    <FormField label="Full Name *" value={form.name} onChange={v => set("name", v)} placeholder="Your full name" />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                      <FormField label="Phone *" value={form.phone} onChange={v => set("phone", v)} placeholder="+1 (555) 000-0000" type="tel" />
+                      <FormField label="Email" value={form.email} onChange={v => set("email", v)} placeholder="you@email.com" type="email" />
+                    </div>
+                    <div style={{ marginBottom: "1.25rem" }}>
+                      <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.textLight, marginBottom: 7 }}>Department *</label>
+                      <select value={form.dept} onChange={e => set("dept", e.target.value)}
+                        style={{ width: "100%", padding: "11px 14px", background: T.ivory, border: `1.5px solid ${T.border}`, borderRadius: 8, color: form.dept ? T.text : T.textLight, fontSize: "0.875rem" }}>
+                        <option value="">Select Department</option>
+                        {["Cardiac Sciences", "Neurosciences", "Orthopaedics", "Oncology", "Women & Child", "Pulmonology", "Transplant", "Dental"].map(o => <option key={o}>{o}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                      <FormField label="Preferred Date" value={form.date} onChange={v => set("date", v)} type="date" />
+                      <div style={{ marginBottom: "1.25rem" }}>
+                        <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.textLight, marginBottom: 7 }}>Preferred Time</label>
+                        <select value={form.time} onChange={e => set("time", e.target.value)} style={{ width: "100%", padding: "11px 14px", background: T.ivory, border: `1.5px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: "0.875rem" }}>
+                          {["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"].map(t => <option key={t}>{t}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: "1.75rem" }}>
+                      <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.textLight, marginBottom: 7 }}>Symptoms / Notes</label>
+                      <textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Briefly describe your symptoms or reason for visit..." rows={3}
+                        style={{ width: "100%", padding: "11px 14px", background: T.ivory, border: `1.5px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: "0.875rem", resize: "none", fontFamily: "'Lato', sans-serif" }} />
+                    </div>
+                    <Btn variant="teal" onClick={handleSubmit} style={{ width: "100%", justifyContent: "center", padding: "14px" }}>
+                      ✓ Submit Appointment Request
+                    </Btn>
+                    <p style={{ fontSize: "0.72rem", color: T.textLight, textAlign: "center", marginTop: "1rem" }}>🔒 Your information is encrypted and never shared.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Services info */}
+          <section style={{ padding: "5rem 2rem", background: T.ivory }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              <div className="fade-up" style={{ textAlign: "center", marginBottom: "3rem" }}>
+                <SectionLabel center>Patient Resources</SectionLabel>
+                <SectionTitle center style={{ marginTop: 12 }}>Everything You Need,<br /><em>Before You Arrive</em></SectionTitle>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.5rem" }}>
+                {[
+                  { icon: "📋", title: "Pre-Admission Checklist", desc: "Documents, insurance cards, and what to bring for your visit." },
+                  { icon: "🍽️", title: "Dietary Guidelines", desc: "Pre-operative fasting and dietary instructions by procedure type." },
+                  { icon: "🏨", title: "Patient Concierge", desc: "Room preferences, guest facilities, and accommodation support." },
+                  { icon: "🌐", title: "International Patients", desc: "Visa letters, travel coordination, and multilingual assistance." },
+                ].map(r => (
+                  <div key={r.title} className="fade-up" style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 14, padding: "1.75rem", transition: "all 0.3s" }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = "0 12px 40px rgba(28,43,58,0.08)"}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = ""}>
+                    <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>{r.icon}</div>
+                    <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1rem", color: T.navy, marginBottom: "0.5rem" }}>{r.title}</h4>
+                    <p style={{ fontSize: "0.82rem", color: T.textMid, lineHeight: 1.65 }}>{r.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    };
+
+    const FormField = ({ label, value, onChange, placeholder, type = "text" }) => (
+      <div style={{ marginBottom: "1.25rem" }}>
+        <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.textLight, marginBottom: 7 }}>{label}</label>
+        <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+          style={{ width: "100%", padding: "11px 14px", background: T.ivory, border: `1.5px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: "0.875rem", outline: "none", fontFamily: "'Lato', sans-serif", transition: "border-color 0.2s" }}
+          onFocus={e => e.target.style.borderColor = T.teal}
+          onBlur={e => e.target.style.borderColor = T.border} />
+      </div>
+    );
+
+    // ─── PAGE: CONTACT ───
+    const ContactPage = () => {
+      const ref = useScrollFade();
+      return (
+        <div ref={ref}>
+          <div style={{ background: T.navy, padding: "5rem 2rem 4rem" }}>
+            <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center" }} className="fade-up">
+              <SectionLabel center light>Get in Touch</SectionLabel>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2.2rem, 5vw, 3.5rem)", color: "#fff", fontWeight: 500, margin: "1rem 0 1.25rem", lineHeight: 1.1 }}>
+                We Are Here for You,<br /><em style={{ color: T.goldLight }}>Always</em>
+              </h1>
+            </div>
+          </div>
+
+          <section style={{ padding: "5rem 2rem 6rem", background: T.cream }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "4rem" }}>
+                {[
+                  { icon: "📍", title: "Main Campus", lines: ["142 Sovereign Boulevard", "Janakpurdham 45600"] },
+                  { icon: "📞", title: "General Enquiries", lines: ["+977-9800000000", "+977-9800000000 (ER)"] },
+                  { icon: "✉️", title: "Email Us", lines: ["care@sovereignhealth.com", "intl@sovereignhealth.com"] },
+                  { icon: "🕐", title: "OPD Hours", lines: ["Mon–Sat: 8:00 AM – 8:00 PM", "Emergency: 24 / 7 / 365"] },
+                  { icon: "🌍", title: "International", lines: ["intl@sovereignhealth.com", "+041-526111"] },
+                  { icon: "🚑", title: "Ambulance", lines: ["1-800-911-9911", "Response < 12 minutes"] },
+                ].map(c => (
+                  <div key={c.title} className="fade-up" style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 14, padding: "1.75rem", textAlign: "center", transition: "all 0.3s" }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(28,43,58,0.08)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                    <div style={{ width: 52, height: 52, background: T.goldPale, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, margin: "0 auto 1rem" }}>{c.icon}</div>
+                    <h4 style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.textLight, marginBottom: "0.5rem" }}>{c.title}</h4>
+                    {c.lines.map(l => <p key={l} style={{ fontSize: "0.88rem", color: T.navy, fontWeight: 600, lineHeight: 1.6 }}>{l}</p>)}
+                  </div>
+                ))}
+              </div>
+
+              {/* Map placeholder + quick message */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "3rem", alignItems: "stretch" }}>
+                <div className="fade-up" style={{ background: T.navy, borderRadius: 20, padding: "3rem", display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 360 }}>
+                  <div style={{ fontSize: "3rem", marginBottom: "1rem", textAlign: "center" }}>🗺️</div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.3rem", color: "#fff", textAlign: "center", marginBottom: "1rem" }}>3 Campuses Citywide</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {[
+                      { name: "Main Campus", addr: "142 Sovereign Blvd, Janakpurdham 45600" },
+                      { name: "North Campus", addr: "88 Wellness Ave, Janakpurdham 45600" },
+                      { name: "South Campus", addr: "201 Health Pk Drive, Janakpurdham 45600" },
+                    ].map(c => (
+                      <div key={c.name} style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "1rem 1.25rem" }}>
+                        <div style={{ fontWeight: 700, color: T.goldLight, fontSize: "0.85rem" }}>{c.name}</div>
+                        <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.6)", marginTop: 3 }}>{c.addr}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="fade-up" style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 20, padding: "2.5rem" }}>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.4rem", color: T.navy, marginBottom: "1.5rem" }}>Send a Message</h3>
+                  {["Your Name", "Email Address", "Subject"].map(l => (
+                    <div key={l} style={{ marginBottom: "1rem" }}>
+                      <label style={{ display: "block", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.textLight, marginBottom: 6 }}>{l}</label>
+                      <input style={{ width: "100%", padding: "11px 14px", background: T.ivory, border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: "0.875rem", color: T.text, fontFamily: "'Lato', sans-serif" }} placeholder={`Enter ${l.toLowerCase()}`} />
+                    </div>
+                  ))}
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <label style={{ display: "block", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.textLight, marginBottom: 6 }}>Message</label>
+                    <textarea rows={4} style={{ width: "100%", padding: "11px 14px", background: T.ivory, border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: "0.875rem", color: T.text, fontFamily: "'Lato', sans-serif", resize: "none" }} placeholder="How can we help you?" />
+                  </div>
+                  <Btn variant="primary" style={{ width: "100%", justifyContent: "center" }}>Send Message →</Btn>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    };
+
+    // ─── FOOTER ───
+    const Footer = ({ setPage }) => (
+      <footer style={{ background: T.navy, color: "#fff", padding: "5rem 2rem 2.5rem" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "3rem", marginBottom: "3.5rem", flexWrap: "wrap" }}>
+            <div>
+              <Logo white />
+              <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.875rem", lineHeight: 1.8, margin: "1.25rem 0 1.75rem", fontWeight: 300, maxWidth: 280 }}>
+                Sovereign Health Medical Center — where world-class medicine meets the warmth of human care. Serving since 1985.
+              </p>
+              <div style={{ display: "flex", gap: 10 }}>
+                {["𝕏", "f", "in", "📷", "▶"].map(s => (
+                  <div key={s} style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem", cursor: "pointer", transition: "all 0.2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = T.gold; e.currentTarget.style.borderColor = T.gold; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}>{s}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {[
+              { title: "Specialties", links: ["Cardiac Sciences", "Neurosciences", "Orthopaedics", "Oncology", "Transplant", "Women & Child"] },
+              { title: "Quick Links", links: ["About Us", "Our Doctors", "Patient Portal", "Research", "Careers", "Press Room"] },
+              { title: "Support", links: ["Insurance & TPA", "Billing", "International Patients", "Patient Rights", "Privacy Policy", "Accessibility"] },
+            ].map(col => (
+              <div key={col.title}>
+                <h4 style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.45)", marginBottom: "1.25rem" }}>{col.title}</h4>
+                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.7rem" }}>
+                  {col.links.map(l => (
+                    <li key={l}><span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.65)", cursor: "pointer", transition: "color 0.2s" }}
+                      onMouseEnter={e => e.target.style.color = T.goldLight}
+                      onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.65)"}>{l}</span></li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Accreditations */}
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "2.5rem", paddingBottom: "2.5rem", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+            {["🏆 JCI Certified", "🌟 NABH Gold", "✅ ISO 9001:2015", "💻 HIMSS Level 7", "🔬 NCI Designated"].map(a => (
+              <span key={a} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", padding: "6px 14px", borderRadius: 100, fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.06em", color: "rgba(255,255,255,0.55)", textTransform: "uppercase" }}>{a}</span>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+            <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.35)" }}>© 2026 Sovereign Health Medical Center. All rights reserved.</p>
+            <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.35)" }}>Designed with care for those who care.</p>
+          </div>
+        </div>
+      </footer>
+    );
+
+    // ─── SCROLL TO TOP ───
+    const ScrollTop = () => {
+      const [visible, setVisible] = useState(false);
+      useEffect(() => {
+        const fn = () => setVisible(window.scrollY > 600);
+        window.addEventListener("scroll", fn);
+        return () => window.removeEventListener("scroll", fn);
+      }, []);
+      if (!visible) return null;
+      return (
+        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          style={{ position: "fixed", bottom: "2rem", right: "2rem", width: 48, height: 48, background: T.navy, border: `2px solid ${T.gold}`, borderRadius: 12, color: T.goldLight, fontSize: 18, zIndex: 900, boxShadow: "0 8px 24px rgba(28,43,58,0.25)", transition: "all 0.3s", animation: "fadeIn 0.3s ease" }}
+          onMouseEnter={e => { e.currentTarget.style.background = T.gold; e.currentTarget.style.color = "#fff"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = T.navy; e.currentTarget.style.color = T.goldLight; }}>
+          ↑
+        </button>
+      );
+    };
+
+    // ─── APP ───
+    function App() {
+      const [page, setPage] = useState("home");
+
+      const changePage = (p) => {
+        setPage(p);
+        setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 10);
+      };
+
+      const pages = { home: <HomePage setPage={changePage} />, about: <AboutPage />, departments: <DepartmentsPage />, doctors: <DoctorsPage setPage={changePage} />, patients: <PatientsPage />, contact: <ContactPage /> };
+
+      return (
+        <>
+          <style>{fontStyle}</style>
+          <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+            <Nav page={page} setPage={changePage} />
+            <main style={{ flex: 1 }} className="page-enter" key={page}>
+              {pages[page] || <HomePage setPage={changePage} />}
+            </main>
+            {/* DEV CTA GRAND */}
+            <section style={{ padding: "5rem 2rem", background: T.ivory, display: "flex", justifyContent: "center" }}>
+              <div style={{ width: "100%", maxWidth: 1000, background: T.navy, color: "#fff", borderRadius: 24, padding: "3.5rem 4rem", border: `1px solid ${T.goldLight}`, boxShadow: "0 24px 60px rgba(28,43,58,0.2)", position: "relative", overflow: "hidden", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "3rem" }}>
+                <div style={{ position: "absolute", right: -100, top: -100, width: 300, height: 300, borderRadius: "50%", background: `radial-gradient(circle, ${T.gold} 0%, transparent 60%)`, opacity: 0.15 }} />
+                <div style={{ flex: "1 1 400px", position: "relative", zIndex: 2 }}>
+                  <SectionLabel light>System Architect</SectionLabel>
+                  <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(2rem, 4vw, 2.6rem)", color: "#fff", marginBottom: "1rem", lineHeight: 1.2 }}>
+                    Designed & Built by<br /><em style={{ color: T.goldLight, fontStyle: "italic" }}>Sushant Raj Mishra</em>
+                  </h2>
+                  <p style={{ color: "rgba(255,255,255,0.7)", fontFamily: "'Lato', sans-serif", fontSize: "1rem", lineHeight: 1.7, maxWidth: 450 }}>
+                    Delivering premium, high-performance web applications with uncompromised aesthetics and scalable architecture.
+                  </p>
+                </div>
+                <div style={{ flexShrink: 0, position: "relative", zIndex: 2 }}>
+                  <Btn variant="gold" onClick={() => window.open('https://sushantrm.com.np/', '_blank')} style={{ padding: "14px 32px", fontSize: "1.05rem", textTransform: "none" }}>Hire Developer ↗</Btn>
+                </div>
+              </div>
+            </section>
+            <Footer setPage={changePage} />
+            <ScrollTop />
+          </div>
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>
